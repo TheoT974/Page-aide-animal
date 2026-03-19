@@ -31,14 +31,14 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 // ============================================================================
 //
 //  Le mot de passe est stocke sous forme de hash SHA-256 (jamais en clair).
-//  Mot de passe par defaut : "admin123"
+//  Le mot de passe actuel est defini dans la variable ci-dessous.
 //
 //  POUR CHANGER LE MOT DE PASSE :
 //  1. Ouvre un terminal et tape :
 //     node -e "console.log(require('crypto').createHash('sha256').update('TON_NOUVEAU_MDP').digest('hex'))"
 //  2. Remplace la valeur de ADMIN_PASSWORD_HASH par le hash genere
 //
-//  OU plus simple : change directement 'admin123' ci-dessous par ton mot de passe
+//  OU plus simple : change directement le mot de passe entre guillemets ci-dessous
 // ============================================================================
 const ADMIN_PASSWORD_HASH = crypto.createHash('sha256').update('chienchataide974').digest('hex');
 
@@ -273,11 +273,72 @@ app.post('/api/upload', requireAuth, upload.single('image'), (req, res) => {
 });
 
 // ============================================================================
+//  ANALYTICS - Suivi des clics sur les cartes
+// ============================================================================
+
+const ANALYTICS_FILE = path.join(__dirname, 'analytics.json');
+
+// Lit le fichier analytics.json (le cree s'il n'existe pas)
+function readAnalytics() {
+  try {
+    return JSON.parse(fs.readFileSync(ANALYTICS_FILE, 'utf-8'));
+  } catch {
+    return { clicks: {} };
+  }
+}
+
+// Ecrit les analytics dans le fichier
+function writeAnalytics(analytics) {
+  fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(analytics, null, 2), 'utf-8');
+}
+
+// POST /api/analytics/click - Enregistre un clic sur une carte (route publique)
+// Corps : { "cardId": "...", "sectionId": "...", "cardName": "...", "sectionName": "..." }
+app.post('/api/analytics/click', (req, res) => {
+  const { cardId, sectionId, cardName, sectionName } = req.body;
+  if (!cardId) return res.status(400).json({ error: 'cardId requis' });
+
+  const analytics = readAnalytics();
+  if (!analytics.clicks[cardId]) {
+    analytics.clicks[cardId] = {
+      cardName: cardName || '',
+      sectionId: sectionId || '',
+      sectionName: sectionName || '',
+      count: 0,
+      lastClick: null,
+      history: []
+    };
+  }
+  const entry = analytics.clicks[cardId];
+  entry.count++;
+  entry.lastClick = new Date().toISOString();
+  entry.cardName = cardName || entry.cardName;
+  entry.sectionName = sectionName || entry.sectionName;
+  // Garder les 100 derniers clics dans l'historique
+  entry.history.push(entry.lastClick);
+  if (entry.history.length > 100) entry.history = entry.history.slice(-100);
+
+  writeAnalytics(analytics);
+  res.json({ ok: true });
+});
+
+// GET /api/analytics - Retourne les statistiques (protege par auth)
+app.get('/api/analytics', requireAuth, (req, res) => {
+  res.json(readAnalytics());
+});
+
+// DELETE /api/analytics - Remet les statistiques a zero (protege par auth)
+app.delete('/api/analytics', requireAuth, (req, res) => {
+  writeAnalytics({ clicks: {} });
+  res.json({ ok: true });
+});
+
+// ============================================================================
 //  DEMARRAGE DU SERVEUR
 // ============================================================================
 
 app.listen(PORT, () => {
   console.log(`Serveur demarre sur http://localhost:${PORT}`);
   console.log(`Page: http://localhost:${PORT}/mainV2.html`);
-  console.log(`Mot de passe admin par defaut: admin123`);
+  console.log(`Admin : 5 clics rapides sur le footer pour y acceder`);
 });

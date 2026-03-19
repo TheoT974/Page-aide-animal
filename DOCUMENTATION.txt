@@ -1,0 +1,316 @@
+================================================================================
+  DOCUMENTATION - Page d'Information de Karine
+  Derniere mise a jour : Mars 2026
+================================================================================
+
+TABLE DES MATIERES
+------------------
+  1. Presentation du projet
+  2. Fichiers du projet
+  3. Installation et lancement
+  4. Utilisation de la page publique
+  5. Acces au panneau d'administration
+  6. Fonctionnalites de l'admin
+  7. Page d'analytics (statistiques)
+  8. Securite
+  9. Structure des donnees (data.json)
+  10. API REST du serveur
+  11. Personnalisation
+  12. Depannage
+
+
+================================================================================
+  1. PRESENTATION DU PROJET
+================================================================================
+
+Ce projet est une page web d'information qui affiche des liens organises par
+sections (Interco, Veterinaire, Association, Liens Utiles, etc.).
+
+Chaque lien est presente sous forme de "carte" coloree avec un nom, une
+description, une icone (emoji ou image) et un lien cliquable.
+
+Un panneau d'administration cache permet de modifier tout le contenu sans
+toucher au code.
+
+
+================================================================================
+  2. FICHIERS DU PROJET
+================================================================================
+
+  page karine/
+  |
+  |-- server.js          Serveur backend Node.js/Express
+  |                      Gere l'API REST et sert les fichiers statiques
+  |
+  |-- mainV2.html        Page principale (publique + admin dans un seul fichier)
+  |                      Contient le HTML, CSS et JavaScript
+  |
+  |-- data.json          Donnees du site (en-tete, banniere, sections, cartes)
+  |                      Modifie automatiquement par l'admin
+  |
+  |-- analytics.json     Statistiques de clics sur les cartes
+  |                      Cree automatiquement au premier clic
+  |
+  |-- package.json       Dependances Node.js du projet
+  |
+  |-- DOCUMENTATION.txt  Ce fichier
+  |
+  |-- images/            Dossier contenant les logos et images
+  |   |-- civis-logo.png
+  |   |-- cinor-logo.svg
+  |   |-- casud-logo.png
+  |   |-- cirest-logo.png
+  |   |-- tco-logo.png
+  |   |-- (images uploadees via l'admin...)
+  |
+  |-- .claude/           Configuration de developpement
+      |-- launch.json    Config du serveur de dev
+
+
+================================================================================
+  3. INSTALLATION ET LANCEMENT
+================================================================================
+
+  Prerequis :
+    - Node.js installe (version 14 ou superieure)
+    - npm (inclus avec Node.js)
+
+  Etapes :
+    1. Ouvrir un terminal dans le dossier "page karine"
+    2. Installer les dependances :
+         npm install
+    3. Lancer le serveur :
+         node server.js
+    4. Ouvrir le navigateur a l'adresse :
+         http://localhost:3000/mainV2.html
+
+  Le serveur affichera dans le terminal :
+    "Serveur demarre sur http://localhost:3000"
+
+
+================================================================================
+  4. UTILISATION DE LA PAGE PUBLIQUE
+================================================================================
+
+La page publique affiche :
+  - Un en-tete avec un badge, un titre et une description
+  - Une banniere d'annonce importante (gradient violet/bleu)
+  - Des sections de cartes organisees par categorie
+  - Un footer avec des points colores
+
+Chaque carte est cliquable et ouvre le lien associe dans un nouvel onglet.
+Les cartes ont un effet de survol avec une fleche qui apparait.
+
+
+================================================================================
+  5. ACCES AU PANNEAU D'ADMINISTRATION
+================================================================================
+
+L'acces admin est CACHE pour eviter que n'importe qui y accede.
+
+  Comment y acceder :
+    1. Aller sur la page publique
+    2. Cliquer 5 FOIS RAPIDEMENT sur le footer (les petits points colores
+       en bas de la page) - les 5 clics doivent etre faits en moins de 1.5s
+    3. L'ecran de connexion apparait
+    4. Entrer le mot de passe (celui configure dans server.js)
+    5. Cliquer "Se connecter"
+
+  Pour revenir a la page publique :
+    - Cliquer le bouton "Retour a la page" en haut a gauche
+    - Ou cliquer "Deconnexion" en haut a droite
+
+  CHANGER LE MOT DE PASSE :
+    Ouvrir server.js et modifier la ligne :
+      const ADMIN_PASSWORD_HASH = crypto.createHash('sha256').update('admin123').digest('hex');
+    Remplacer le mot de passe entre guillemets par le nouveau mot de passe souhaite.
+
+
+================================================================================
+  6. FONCTIONNALITES DE L'ADMIN
+================================================================================
+
+  En-tete de la page :
+    - Modifier le badge (petit texte en haut)
+    - Modifier le titre principal
+    - Modifier la description
+
+  Banniere :
+    - Modifier le titre de la banniere
+    - Modifier le message d'annonce
+
+  Sections :
+    - Renommer une section
+    - Changer la couleur de la section (14 couleurs disponibles)
+    - Reorganiser les sections (fleches haut/bas)
+    - Ajouter une nouvelle section
+    - Supprimer une section (et toutes ses cartes)
+
+  Cartes :
+    - Modifier le nom, la description, le lien
+    - Changer la couleur (14 couleurs disponibles)
+    - Choisir entre emoji et image pour l'icone
+    - Uploader une image personnalisee
+    - Reorganiser les cartes (fleches haut/bas)
+    - Ajouter/supprimer des cartes
+
+  Les panneaux sont repliables en cliquant sur leur titre.
+  Chaque modification est sauvegardee immediatement sur le serveur.
+
+
+================================================================================
+  7. PAGE D'ANALYTICS (STATISTIQUES)
+================================================================================
+
+Le systeme d'analytics suit automatiquement les clics sur les cartes.
+
+  Acces :
+    - Depuis le panneau d'administration, un panneau "Statistiques" est
+      disponible en haut, apres la banniere
+    - Ou directement via : http://localhost:3000/mainV2.html (en admin)
+
+  Donnees suivies :
+    - Nombre total de clics par carte
+    - Date du dernier clic
+    - Classement des cartes les plus cliquees
+
+  Les statistiques sont stockees dans analytics.json et persistent
+  entre les redemarrages du serveur.
+
+
+================================================================================
+  8. SECURITE
+================================================================================
+
+  Mot de passe :
+    - Stocke sous forme de hash SHA-256 (jamais en clair)
+    - Comparaison en "timing-safe" (protege contre les attaques par timing)
+    - PAS de base de donnees SQL = PAS d'injection SQL possible
+
+  Sessions :
+    - Token aleatoire de 32 octets genere a chaque connexion
+    - Les sessions expirent apres 2 heures
+    - Le token est envoye dans le header X-Auth-Token
+
+  Protection XSS :
+    - Toutes les donnees affichees sont echappees avec la fonction esc()
+    - Les entrees utilisateur ne sont jamais inserees en HTML brut
+
+  Acces admin :
+    - Cache derriere un mecanisme de 5 clics rapides
+    - Toutes les routes d'ecriture necessitent un token valide
+    - Les routes de lecture (GET) sont publiques
+
+
+================================================================================
+  9. STRUCTURE DES DONNEES (data.json)
+================================================================================
+
+  {
+    "header": {
+      "badge": "Texte du badge",
+      "title": "Titre principal",
+      "description": "Description sous le titre"
+    },
+    "banner": {
+      "title": "Titre de la banniere",
+      "text": "Message de la banniere"
+    },
+    "sections": [
+      {
+        "id": "identifiant_unique",
+        "title": "Nom de la section",
+        "color": "violet",          // Couleur du point (coral, sky, violet, etc.)
+        "cards": [
+          {
+            "id": "identifiant_carte",
+            "name": "Nom de la carte",
+            "desc": "Description courte",
+            "color": "coral",        // Couleur de la carte
+            "icon": "emoji",         // Type d'icone : "emoji" ou "image"
+            "image": "",             // Chemin vers l'image (si icon="image")
+            "emoji": "icone",        // Emoji (si icon="emoji")
+            "link": "https://..."    // URL du lien
+          }
+        ]
+      }
+    ]
+  }
+
+
+================================================================================
+  10. API REST DU SERVEUR
+================================================================================
+
+  Routes publiques (pas d'authentification) :
+    GET  /api/data                    Lire toutes les donnees
+    POST /api/analytics/click         Enregistrer un clic sur une carte
+
+  Routes protegees (necessitent le header X-Auth-Token) :
+    POST /api/login                   Se connecter (retourne un token)
+    PUT  /api/header                  Modifier l'en-tete
+    PUT  /api/banner                  Modifier la banniere
+    PUT  /api/sections/:id            Modifier une section
+    POST /api/sections                Creer une section
+    DELETE /api/sections/:id          Supprimer une section
+    PUT  /api/sections-reorder        Changer l'ordre des sections
+    PUT  /api/sections/:id/cards/:id  Modifier une carte
+    POST /api/sections/:id/cards      Ajouter une carte
+    DELETE /api/sections/:id/cards/:id Supprimer une carte
+    PUT  /api/sections/:id/reorder    Changer l'ordre des cartes
+    POST /api/upload                  Uploader une image
+    GET  /api/analytics               Lire les statistiques
+
+
+================================================================================
+  11. PERSONNALISATION
+================================================================================
+
+  Couleurs disponibles (14) :
+    coral (rouge), sky (turquoise), violet, civis (jaune), mint (vert),
+    rose, ocean (bleu), lavender (mauve), amber (ambre), indigo,
+    emerald (emeraude), fuchsia, teal (sarcelle), slate (ardoise)
+
+  Pour ajouter une couleur :
+    1. Dans mainV2.html, ajouter les variables CSS dans :root
+    2. Ajouter les styles .card.NOM dans le CSS
+    3. Ajouter l'entree dans les tableaux COLORS et SECTION_COLORS en JS
+
+  Polices :
+    - DM Sans : texte courant
+    - Fraunces : titres principaux
+    (chargees depuis Google Fonts)
+
+
+================================================================================
+  12. DEPANNAGE
+================================================================================
+
+  "La page affiche Chargement..." :
+    -> Le serveur n'est probablement pas lance
+    -> Lancer : node server.js
+
+  "Mot de passe incorrect" :
+    -> Le mot de passe par defaut est : admin123
+    -> Verifier dans server.js la ligne ADMIN_PASSWORD_HASH
+
+  "Les images ne s'affichent pas" :
+    -> Verifier que les fichiers existent dans le dossier images/
+    -> Verifier les chemins dans data.json
+
+  "Erreur 401 Non autorise" :
+    -> La session a expire (2 heures max)
+    -> Se reconnecter via le panneau admin
+
+  "npm install ne fonctionne pas" :
+    -> Verifier que Node.js est installe : node --version
+    -> Verifier que npm est installe : npm --version
+
+  Pour tout probleme :
+    -> Ouvrir la console du navigateur (F12 > Console)
+    -> Verifier les messages d'erreur
+
+
+================================================================================
+  Fin de la documentation
+================================================================================
