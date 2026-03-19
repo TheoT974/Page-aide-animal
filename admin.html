@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --coral: #FF6B6B; --sky: #4ECDC4; --violet: #7C5CFC; --sun: #FFB340;
+    --mint: #2ED47A; --rose: #F76CA5; --ocean: #3B82F6; --lavender: #A78BFA;
+    --bg: #F1F5F9; --card-bg: #FFFFFF; --text: #1E293B; --text-dim: #64748B;
+    --border: #E2E8F0; --danger: #EF4444; --success: #10B981;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+  .topbar {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar h1 { font-size: 1.2rem; font-weight: 700; }
+  .topbar-actions { display: flex; gap: 10px; }
+  .topbar a, .topbar button {
+    padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+    text-decoration: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary { background: var(--violet); color: white; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { opacity: 0.9; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+  .panel {
+    background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border);
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .panel-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+  }
+  .panel-header:hover { background: #F8FAFC; }
+  .panel-header h2 { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .panel-body { padding: 20px; }
+  .panel-body.collapsed { display: none; }
+
+  .color-dot {
+    width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+  }
+
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.9rem; font-family: inherit; background: white; color: var(--text);
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,92,252,0.1);
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Card editor */
+  .card-editor {
+    background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; margin-bottom: 12px; position: relative;
+  }
+  .card-editor-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .card-editor-header h3 { font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .card-editor-actions { display: flex; gap: 6px; }
+
+  .card-preview {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    border-radius: 12px; margin-bottom: 14px; border: 1.5px solid transparent;
+  }
+  .card-preview .icon {
+    width: 40px; height: 40px; border-radius: 10px; display: flex;
+    align-items: center; justify-content: center; font-size: 1.2rem; color: white;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .card-preview .icon img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+  .card-preview .info { flex: 1; }
+  .card-preview .info .name { font-weight: 600; font-size: 0.9rem; }
+  .card-preview .info .desc { font-size: 0.75rem; color: var(--text-dim); }
+
+  /* Color picker */
+  .color-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-option {
+    width: 32px; height: 32px; border-radius: 8px; border: 2px solid transparent;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .color-option:hover { transform: scale(1.1); }
+  .color-option.selected { border-color: var(--text); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--text); }
+
+  /* Icon type toggle */
+  .icon-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+  .icon-toggle button {
+    padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: white; cursor: pointer; font-size: 0.8rem; font-family: inherit; font-weight: 500;
+  }
+  .icon-toggle button.active { background: var(--violet); color: white; border-color: var(--violet); }
+
+  /* Image upload area */
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 8px; padding: 16px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+  }
+  .upload-area:hover { border-color: var(--violet); background: rgba(124,92,252,0.03); }
+  .upload-area input { display: none; }
+  .upload-area p { font-size: 0.8rem; color: var(--text-dim); }
+  .current-image { margin-top: 8px; }
+  .current-image img { max-height: 50px; border-radius: 6px; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--success); color: white;
+    padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+    opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 200;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  .empty-state { text-align: center; padding: 24px; color: var(--text-dim); font-size: 0.85rem; }
+
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .container { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Administration</h1>
+  <div class="topbar-actions">
+    <a href="mainV2.html" class="btn-outline">Voir la page</a>
+  </div>
+</div>
+
+<div class="container" id="app">
+  <p style="text-align:center; padding:40px; color:var(--text-dim);">Chargement...</p>
+</div>
+
+<div class="toast" id="toast">Sauvegarde reussie !</div>
+
+<script>
+const API = '';
+const COLORS = [
+  { name: 'coral', hex: '#FF6B6B', label: 'Rouge' },
+  { name: 'sky', hex: '#4ECDC4', label: 'Turquoise' },
+  { name: 'violet', hex: '#7C5CFC', label: 'Violet' },
+  { name: 'civis', hex: '#FFD42D', label: 'Jaune' },
+  { name: 'mint', hex: '#2ED47A', label: 'Vert' },
+  { name: 'rose', hex: '#F76CA5', label: 'Rose' },
+  { name: 'ocean', hex: '#3B82F6', label: 'Bleu' },
+  { name: 'lavender', hex: '#A78BFA', label: 'Mauve' },
+];
+
+const SECTION_COLORS = [
+  { name: 'coral', hex: '#FF6B6B' }, { name: 'sky', hex: '#4ECDC4' },
+  { name: 'violet', hex: '#7C5CFC' }, { name: 'sun', hex: '#FFB340' },
+  { name: 'mint', hex: '#2ED47A' }, { name: 'rose', hex: '#F76CA5' },
+  { name: 'ocean', hex: '#3B82F6' }, { name: 'lavender', hex: '#A78BFA' },
+];
+
+let data = null;
+
+function getColorHex(name) {
+  const c = COLORS.find(c => c.name === name);
+  return c ? c.hex : '#7C5CFC';
+}
+
+function getSectionColorHex(name) {
+  const c = SECTION_COLORS.find(c => c.name === name);
+  return c ? c.hex : '#7C5CFC';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg || 'Sauvegarde reussie !';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  return res.json();
+}
+
+async function uploadImage(file) {
+  const fd = new FormData();
+  fd.append('image', file);
+  const res = await fetch(API + '/api/upload', { method: 'POST', body: fd });
+  return res.json();
+}
+
+async function loadData() {
+  data = await (await fetch(API + '/api/data')).json();
+  render();
+}
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // Header panel
+  app.innerHTML += `
+    <div class="panel">
+      <div class="panel-header" onclick="togglePanel(this)">
+        <h2>En-tete de la page</h2>
+        <span>&#9660;</span>
+      </div>
+      <div class="panel-body">
+        <div class="form-group">
+          <label>Badge</label>
+          <input type="text" value="${esc(data.header.badge)}" onchange="saveHeader('badge', this.value)">
+        </div>
+        <div class="form-group">
+          <label>Titre</label>
+          <input type="text" value="${esc(data.header.title)}" onchange="saveHeader('title', this.value)">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea rows="2" onchange="saveHeader('description', this.value)">${esc(data.header.description)}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Banner panel
+  app.innerHTML += `
+    <div class="panel">
+      <div class="panel-header" onclick="togglePanel(this)">
+        <h2>Banniere</h2>
+        <span>&#9660;</span>
+      </div>
+      <div class="panel-body">
+        <div class="form-group">
+          <label>Titre</label>
+          <input type="text" value="${esc(data.banner.title)}" onchange="saveBanner('title', this.value)">
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea rows="3" onchange="saveBanner('text', this.value)">${esc(data.banner.text)}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Sections
+  data.sections.forEach((section, si) => {
+    let cardsHtml = '';
+    section.cards.forEach((card, ci) => {
+      cardsHtml += renderCardEditor(section, card);
+    });
+
+    app.innerHTML += `
+      <div class="panel" data-section="${section.id}">
+        <div class="panel-header" onclick="togglePanel(this)">
+          <h2><span class="color-dot" style="background:${getSectionColorHex(section.color)}"></span> ${esc(section.title)}</h2>
+          <span>&#9660;</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row" style="margin-bottom:16px;">
+            <div class="form-group">
+              <label>Nom de la section</label>
+              <input type="text" value="${esc(section.title)}" onchange="saveSection('${section.id}', 'title', this.value)">
+            </div>
+            <div class="form-group">
+              <label>Couleur de la section</label>
+              <div class="color-picker">
+                ${SECTION_COLORS.map(c => `<div class="color-option ${section.color === c.name ? 'selected' : ''}" style="background:${c.hex}" onclick="saveSection('${section.id}', 'color', '${c.name}')"></div>`).join('')}
+              </div>
+            </div>
+          </div>
+          <div id="cards-${section.id}">${cardsHtml}</div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn-primary btn-sm" onclick="addCard('${section.id}')">+ Ajouter une carte</button>
+            <button class="btn-danger btn-sm" onclick="deleteSection('${section.id}')">Supprimer la section</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  // Add section button
+  app.innerHTML += `
+    <div style="text-align:center; margin: 20px 0;">
+      <button class="btn-primary" onclick="addSection()">+ Nouvelle section</button>
+    </div>
+  `;
+}
+
+function renderCardEditor(section, card) {
+  const bgLight = getColorHex(card.color) + '18';
+  const iconHtml = card.icon === 'image' && card.image
+    ? `<img src="${esc(card.image)}" alt="">`
+    : esc(card.emoji || '🔗');
+
+  return `
+    <div class="card-editor" data-card="${card.id}">
+      <div class="card-editor-header">
+        <h3><span class="color-dot" style="background:${getColorHex(card.color)}"></span> ${esc(card.name)}</h3>
+        <div class="card-editor-actions">
+          <button class="btn-danger btn-sm" onclick="deleteCard('${section.id}','${card.id}')">Supprimer</button>
+        </div>
+      </div>
+      <div class="card-preview" style="background:${bgLight}">
+        <div class="icon" style="background:${getColorHex(card.color)}">${iconHtml}</div>
+        <div class="info">
+          <div class="name">${esc(card.name)}</div>
+          <div class="desc">${esc(card.desc)}</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" value="${esc(card.name)}" onchange="saveCard('${section.id}','${card.id}','name',this.value)">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" value="${esc(card.desc)}" onchange="saveCard('${section.id}','${card.id}','desc',this.value)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Lien (URL)</label>
+        <input type="text" value="${esc(card.link)}" onchange="saveCard('${section.id}','${card.id}','link',this.value)">
+      </div>
+      <div class="form-group">
+        <label>Couleur</label>
+        <div class="color-picker">
+          ${COLORS.map(c => `<div class="color-option ${card.color === c.name ? 'selected' : ''}" style="background:${c.hex}" title="${c.label}" onclick="saveCard('${section.id}','${card.id}','color','${c.name}')"></div>`).join('')}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Icone</label>
+        <div class="icon-toggle">
+          <button class="${card.icon === 'emoji' ? 'active' : ''}" onclick="setIconType('${section.id}','${card.id}','emoji')">Emoji</button>
+          <button class="${card.icon === 'image' ? 'active' : ''}" onclick="setIconType('${section.id}','${card.id}','image')">Image</button>
+        </div>
+        ${card.icon === 'emoji' ? `
+          <input type="text" value="${esc(card.emoji)}" placeholder="Ex: 📚" onchange="saveCard('${section.id}','${card.id}','emoji',this.value)">
+        ` : `
+          <div class="upload-area" onclick="this.querySelector('input').click()">
+            <input type="file" accept="image/*" onchange="handleUpload('${section.id}','${card.id}',this)">
+            <p>Cliquer pour uploader une image</p>
+            ${card.image ? `<div class="current-image"><img src="${esc(card.image)}" alt=""></div>` : ''}
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function togglePanel(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('collapsed');
+  const arrow = header.querySelector('span');
+  arrow.textContent = body.classList.contains('collapsed') ? '\u25B6' : '\u25BC';
+}
+
+async function saveHeader(field, value) {
+  await api('PUT', '/api/header', { [field]: value });
+  data.header[field] = value;
+  showToast();
+  render();
+}
+
+async function saveBanner(field, value) {
+  await api('PUT', '/api/banner', { [field]: value });
+  data.banner[field] = value;
+  showToast();
+}
+
+async function saveSection(sectionId, field, value) {
+  await api('PUT', `/api/sections/${sectionId}`, { [field]: value });
+  const s = data.sections.find(s => s.id === sectionId);
+  if (s) s[field] = value;
+  showToast();
+  render();
+}
+
+async function saveCard(sectionId, cardId, field, value) {
+  await api('PUT', `/api/sections/${sectionId}/cards/${cardId}`, { [field]: value });
+  const s = data.sections.find(s => s.id === sectionId);
+  if (s) {
+    const c = s.cards.find(c => c.id === cardId);
+    if (c) c[field] = value;
+  }
+  showToast();
+  render();
+}
+
+async function setIconType(sectionId, cardId, type) {
+  await saveCard(sectionId, cardId, 'icon', type);
+}
+
+async function handleUpload(sectionId, cardId, input) {
+  if (!input.files[0]) return;
+  const result = await uploadImage(input.files[0]);
+  if (result.path) {
+    await saveCard(sectionId, cardId, 'image', result.path);
+    await saveCard(sectionId, cardId, 'icon', 'image');
+  }
+}
+
+async function addCard(sectionId) {
+  const result = await api('POST', `/api/sections/${sectionId}/cards`, {});
+  await loadData();
+  showToast('Carte ajoutee !');
+}
+
+async function deleteCard(sectionId, cardId) {
+  if (!confirm('Supprimer cette carte ?')) return;
+  await api('DELETE', `/api/sections/${sectionId}/cards/${cardId}`);
+  await loadData();
+  showToast('Carte supprimee');
+}
+
+async function addSection() {
+  await api('POST', '/api/sections', { title: 'Nouvelle section', color: 'violet' });
+  await loadData();
+  showToast('Section ajoutee !');
+}
+
+async function deleteSection(sectionId) {
+  if (!confirm('Supprimer cette section et toutes ses cartes ?')) return;
+  await api('DELETE', `/api/sections/${sectionId}`);
+  await loadData();
+  showToast('Section supprimee');
+}
+
+// Init
+loadData();
+</script>
+</body>
+</html>
